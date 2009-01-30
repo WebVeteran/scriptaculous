@@ -1,5 +1,3 @@
-// script.aculo.us sound.js v1.8.3, Sat Dec 13 02:12:00 +0500 2008
-
 // Copyright (c) 2005-2008 Thomas Fuchs (http://script.aculo.us, http://mir.aculo.us)
 //
 // Based on code created by Jules Gravinese (http://www.webveteran.com/)
@@ -7,17 +5,14 @@
 // script.aculo.us is freely distributable under the terms of an MIT-style license.
 // For details, see the script.aculo.us web site: http://script.aculo.us/
 
-
 // Set up a random ID for our soundboard
-randID = 'scriptaculous-soundboard'+Math.floor(Math.random()*1000000000);
-      
+randID = 'scriptaculous-soundboard-'+Math.floor(Math.random()*1000000000);
+
 Sound = {
   tracks: {},
   _enabled: true,
   template:
     new Template('<embed style="height:0" id="sound_#{track}_#{id}" src="#{url}" loop="false" autostart="true" hidden="true"/>'),
-  soundboard:
-    new Template('<div id="'+randID+'" style="visibility:hidden;"/>'),
   enable: function(){
     Sound._enabled = true;
   },
@@ -25,6 +20,7 @@ Sound = {
     Sound._enabled = false;
   },
   play: function(url){
+    if(!Sound._enabled) return;
   
     // Is the soundboard created yet?
     if (!$(randID)) {
@@ -37,11 +33,10 @@ Sound = {
 	  // All sounds will play from this soundboard
     }
     
-    if(!Sound._enabled) return;
-    var options = Object.extend({
+   var options = Object.extend({
       track: 'global', url: url, replace: false
     }, arguments[1] || {});
-    
+
     if(options.replace && this.tracks[options.track]) {
       $R(0, this.tracks[options.track].id).each(function(id){
         var sound = $('sound_'+options.track+'_'+id);
@@ -50,12 +45,12 @@ Sound = {
       });
       this.tracks[options.track] = null;
     }
-      
+
     if(!this.tracks[options.track])
       this.tracks[options.track] = { id: 0 };
     else
       this.tracks[options.track].id++;
-      
+
     options.id = this.tracks[options.track].id;
     $(randID).insert( 
       Prototype.Browser.IE ? new Element('bgsound',{
@@ -66,13 +61,15 @@ Sound = {
 };
 
 if(Prototype.Browser.Gecko && navigator.userAgent.indexOf("Win") > 0){
-  if(navigator.plugins && $A(navigator.plugins).detect(function(p){ return p.name.indexOf('QuickTime') != -1 })) {
+  if(navigator.plugins && $A(navigator.plugins).detect(function(p){ return p.name.indexOf('QuickTime') != -1 }))
     Sound.template = new Template('<object id="sound_#{track}_#{id}" width="0" height="0" type="audio/mpeg" data="#{url}"/>');
-    Sound.soundboard = new Template('<div id="'+randID+'" style="visibility:hidden;"/>');
-  } else {
+  else if(navigator.plugins && $A(navigator.plugins).detect(function(p){ return p.name.indexOf('Windows Media') != -1 }))
+    Sound.template = new Template('<object id="sound_#{track}_#{id}" type="application/x-mplayer2" data="#{url}"></object>');
+  else if(navigator.plugins && $A(navigator.plugins).detect(function(p){ return p.name.indexOf('RealPlayer') != -1 }))
+    Sound.template = new Template('<embed type="audio/x-pn-realaudio-plugin" style="height:0" id="sound_#{track}_#{id}" src="#{url}" loop="false" autostart="true" hidden="true"/>');
+  else
     Sound.play = function(){};
-  }
-}
+} 
 
 // Remove the soundboard when leaving
 window.onbeforeunload = function() {
